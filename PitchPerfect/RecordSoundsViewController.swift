@@ -41,13 +41,14 @@ class RecordSoundsViewController: UIViewController, AVAudioRecorderDelegate {
             }
         }
     }
-
-    @IBAction func recordAudio(_ sender: Any) {
-        if hasPermission {
-            recordButton.isEnabled = false
-            stopRecordingButton.isEnabled = true
-            recordingLabel.text = "Recording in Progress"
-            
+    
+    func manageRecording(_ startRecording: Bool) {
+        let session = AVAudioSession.sharedInstance()
+        recordButton.isEnabled = !startRecording
+        stopRecordingButton.isEnabled = startRecording
+        recordingLabel.text = startRecording ? "Recording in Progress" : "Tap To Record"
+        
+        if startRecording && hasPermission {
             let dirPath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] as String
             let recordingName = "recordedVoice.wav"
             let pathArray = [dirPath, recordingName]
@@ -61,18 +62,21 @@ class RecordSoundsViewController: UIViewController, AVAudioRecorderDelegate {
             audioRecorder.isMeteringEnabled = true
             audioRecorder.prepareToRecord()
             audioRecorder.record()
+            
+        } else if startRecording && !hasPermission {
+            print("You did not give permission")
         } else {
-            print("you did not give permission")
+            audioRecorder.stop()
+            try! session.setActive(false)
         }
+    }
+
+    @IBAction func recordAudio(_ sender: Any) {
+        manageRecording(true)
     }
     
     @IBAction func stopRecording(_ sender: Any) {
-        recordButton.isEnabled = true
-        stopRecordingButton.isEnabled = false
-        recordingLabel.text = "Tap to Record"
-        audioRecorder.stop()
-        let audioSession = AVAudioSession.sharedInstance()
-        try! audioSession.setActive(false)
+        manageRecording(false)
     }
     
     func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder, successfully flag: Bool) {
